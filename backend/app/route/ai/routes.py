@@ -1,6 +1,11 @@
 from flask import Blueprint, jsonify, request
 from app.auth.decors import login_required
-from app.ai.services import analyze_quiz_performance, generate_questions, process_media
+from app.ai.services import (
+    GeminiUnavailableError,
+    analyze_quiz_performance,
+    generate_questions,
+    process_media,
+)
 import os
 import werkzeug.utils
 
@@ -92,12 +97,28 @@ def gen_study_material():
 @login_required # Added login required
 def gen_questions():
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
+        if not isinstance(data, dict):
+            return jsonify({"message": "Request body must be a JSON object"}), 400
+
         topic = data.get("topic")
-        count = data.get("count", 5)
+        if not isinstance(topic, str) or not topic.strip() or len(topic) > 300:
+            return jsonify({"message": "Topic must be between 1 and 300 characters"}), 400
+
+        try:
+            count = int(data.get("count", 5))
+        except (TypeError, ValueError):
+            return jsonify({"message": "Question count must be an integer from 1 to 15"}), 400
+        if not 1 <= count <= 15:
+            return jsonify({"message": "Question count must be between 1 and 15"}), 400
+
+        difficulty = data.get("difficulty", "Medium")
+        if not isinstance(difficulty, str) or difficulty not in {"Easy", "Medium", "Hard"}:
+            return jsonify({"message": "Difficulty must be Easy, Medium, or Hard"}), 400
+
         q_type = data.get("type", "single")
 
-        questions_raw = generate_questions(topic, count, q_type)
+        questions_raw = generate_questions(topic.strip(), count, q_type, difficulty)
         
         # Clean and parse JSON
         import json
@@ -127,6 +148,10 @@ def gen_questions():
         db.session.commit()
 
         return jsonify({"questions": questions}), 200
+    except TimeoutError as e:
+        return jsonify({"message": str(e)}), 504
+    except GeminiUnavailableError as e:
+        return jsonify({"message": str(e)}), 503
     except Exception as e:
         return jsonify({"message": str(e)}), 500
 
@@ -144,7 +169,12 @@ def upload_media():
         action = request.form.get("action", "explain")
         query = request.form.get("query")
         difficulty = request.form.get("difficulty", "Medium")
-        count = int(request.form.get("count", 5))
+        try:
+            count = int(request.form.get("count", 5))
+        except (TypeError, ValueError):
+            return jsonify({"message": "Question count must be an integer from 1 to 15"}), 400
+        if not 1 <= count <= 15:
+            return jsonify({"message": "Question count must be between 1 and 15"}), 400
 
         if file:
             filename = werkzeug.utils.secure_filename(file.filename)
@@ -176,6 +206,10 @@ def upload_media():
 
             return jsonify({"result": result}), 200
     
+    except TimeoutError as e:
+        return jsonify({"message": str(e)}), 504
+    except GeminiUnavailableError as e:
+        return jsonify({"message": str(e)}), 503
     except Exception as e:
         return jsonify({"message": str(e)}), 500
 

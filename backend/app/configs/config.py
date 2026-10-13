@@ -20,7 +20,7 @@ class BaseConfig:
     
     # Celery
     CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
-    RESULT_BACKEND = os.getenv("RESULT_BACKEND", "redis://localhost:6379/0")
+    CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
     
     # CORS
     CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
@@ -35,7 +35,6 @@ class DevelopmentConfig(BaseConfig):
     MAIL_USE_TLS = True
     MAIL_USERNAME = os.getenv("MAIL_USERNAME")
     MAIL_PASSWORD = os.getenv("MAIL_PASSWORD")
-    MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER","sidhant")
     MAIL_DEFAULT_SENDER = os.getenv("MAIL_DEFAULT_SENDER","sidhant")
     MAIL_DEBUG = False
     

@@ -3,16 +3,6 @@ from flask_mail import Message
 from app.configs.extensions import mail
 from app.models.users import User
 
-@shared_task(ignore_result=False)
-def send_async_email(subject, recipients, body):
-    msg = Message(subject, recipients=recipients)
-    msg.body = body
-    try:
-        mail.send(msg)
-        return f"Email sent to {recipients}"
-    except Exception as e:
-        return f"Failed to send email: {str(e)}"
-
 @shared_task(ignore_result=True)
 def notify_new_quiz(quiz_title, subject_name):
     # Fetch all users (In real production, batch this or use a more efficient way)

@@ -62,6 +62,8 @@ const processFile = (inputFile) => {
 }
 
 const generate = async () => {
+    if (loading.value) return
+
     loading.value = true
     parsedQuestions.value = null
 
@@ -80,6 +82,7 @@ const generate = async () => {
             formData.append('count', questionCount.value)
 
             res = await api.post('/ai/upload_pdf', formData, {
+                timeout: 65000,
                 headers: { 'Content-Type': 'multipart/form-data' }
             })
             handleResponse(res.data.result, file.value.name.split('.')[0])
@@ -94,6 +97,8 @@ const generate = async () => {
                 topic: topic.value,
                 count: questionCount.value,
                 difficulty: difficulty.value
+            }, {
+                timeout: 65000
             })
             // The /generate_questions endpoint returns { questions: [...] } directly
             // unlike upload_pdf which returns { result: "string_json" }
@@ -103,7 +108,12 @@ const generate = async () => {
         }
 
     } catch (error) {
-        alert(error.response?.data?.message || 'Generation failed')
+        alert(
+            error.response?.data?.message
+            || (error.code === 'ECONNABORTED'
+                ? 'Generation took too long. Please try again with fewer questions or a shorter prompt.'
+                : 'Generation failed')
+        )
     } finally {
         loading.value = false
     }
@@ -284,7 +294,7 @@ const saveQuiz = async () => {
                     <label>Questions: {{ questionCount }}</label>
                     <input type="range" min="1" max="15" v-model="questionCount" class="compact-range">
                 </div>
-                <button class="btn-generate" @click="generate" :disabled="!topic && !file">
+                <button class="btn-generate" @click="generate" :disabled="loading || (!topic && !file)">
                     Generate Quiz 🚀
                 </button>
             </div>

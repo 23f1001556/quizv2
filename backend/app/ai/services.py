@@ -1,5 +1,7 @@
 import google.generativeai as genai
+from google.api_core.exceptions import DeadlineExceeded, ServiceUnavailable
 import os
+import time
 from pypdf import PdfReader
 from dotenv import load_dotenv
 
@@ -23,15 +25,45 @@ If the user asks anything unrelated to studies (e.g., entertainment, politics, p
 Do not generate any harmful, inappropriate, or non-educational content.
 """
 
-def _call_gemini(prompt):
+GEMINI_REQUEST_OPTIONS = {"timeout": 30, "retry": None}
+
+
+class GeminiUnavailableError(Exception):
+    pass
+
+
+def _generate_content(model, contents, generation_config=None):
+    request_options = GEMINI_REQUEST_OPTIONS
+    for attempt in range(2):
+        try:
+            if generation_config is None:
+                return model.generate_content(contents, request_options=request_options)
+            return model.generate_content(
+                contents,
+                generation_config=generation_config,
+                request_options=request_options,
+            )
+        except ServiceUnavailable as e:
+            if attempt == 1:
+                raise GeminiUnavailableError(
+                    "Gemini is temporarily overloaded. Please wait a minute and try again."
+                ) from e
+            time.sleep(1)
+
+
+def _call_gemini(prompt, generation_config=None):
     full_prompt = f"{GUARDRAIL_PROMPT}\n\n{prompt}"
     try:
         model = get_model()
-        response = model.generate_content(full_prompt)
+        response = _generate_content(model, full_prompt, generation_config)
         return response.text
     except ValueError as ve:
         # Pass through expected errors (like missing API key)
         raise ve
+    except GeminiUnavailableError:
+        raise
+    except DeadlineExceeded as e:
+        raise TimeoutError("Gemini generation exceeded the 30-second time limit. Please try again.") from e
     except Exception as e:
         raise Exception(f"AI Service Error: {str(e)}")
 
@@ -87,12 +119,9 @@ def generate_questions(topic, count=5, question_type="single", difficulty="Mediu
     Generates unique questions on a topic.
     """
     prompt = f"""
-    Generate {count} unique {question_type}-choice questions on the topic: "{topic}".
+    Generate exactly {count} concise, unique {question_type}-choice questions on: "{topic}".
     Complexity Level: {difficulty}
-    
-    The questions should be conceptual and appropriate for the {difficulty} level.
-    
-    Return strict JSON format ONLY:
+    Keep each explanation to one concise sentence. Return only valid JSON:
     {{
       "questions": [
         {{
@@ -109,7 +138,14 @@ def generate_questions(topic, count=5, question_type="single", difficulty="Mediu
       ]
     }}
     """
-    return _call_gemini(prompt)
+    return _call_gemini(
+        prompt,
+        generation_config={
+            "temperature": 0.3,
+            "max_output_tokens": 3072,
+            "response_mime_type": "application/json",
+        },
+    )
 
 def process_media(file_path, action, query=None, difficulty="Medium", count=5):
     """
@@ -162,10 +198,21 @@ def process_media(file_path, action, query=None, difficulty="Medium", count=5):
 
         # Multimodal generation
         model = get_model()
-        response = model.generate_content([GUARDRAIL_PROMPT, prompt, content_part] if not is_pdf else [GUARDRAIL_PROMPT, prompt + "\n" + content_part])
+        response = _generate_content(
+            model,
+            [GUARDRAIL_PROMPT, prompt, content_part]
+            if not is_pdf
+            else [GUARDRAIL_PROMPT, prompt + "\n" + content_part]
+        )
         return response.text
 
     except ValueError as ve:
         raise ve
+    except GeminiUnavailableError:
+        raise
+    except DeadlineExceeded as e:
+        raise TimeoutError("Gemini generation exceeded the 30-second time limit. Please try again.") from e
+    except TimeoutError:
+        raise
     except Exception as e:
         raise Exception(f"Media Processing Error: {str(e)}")
