@@ -82,7 +82,7 @@ const generate = async () => {
             formData.append('count', questionCount.value)
 
             res = await api.post('/ai/upload_pdf', formData, {
-                timeout: 65000,
+                timeout: 185000,
                 headers: { 'Content-Type': 'multipart/form-data' }
             })
             handleResponse(res.data.result, file.value.name.split('.')[0])
@@ -98,7 +98,7 @@ const generate = async () => {
                 count: questionCount.value,
                 difficulty: difficulty.value
             }, {
-                timeout: 65000
+                timeout: 185000
             })
             // The /generate_questions endpoint returns { questions: [...] } directly
             // unlike upload_pdf which returns { result: "string_json" }

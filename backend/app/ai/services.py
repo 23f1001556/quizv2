@@ -26,6 +26,7 @@ Do not generate any harmful, inappropriate, or non-educational content.
 """
 
 GEMINI_REQUEST_OPTIONS = {"timeout": 30, "retry": None}
+GEMINI_OVERLOAD_RETRY_DELAYS = (2, 4, 8, 12)
 
 
 class GeminiUnavailableError(Exception):
@@ -33,22 +34,24 @@ class GeminiUnavailableError(Exception):
 
 
 def _generate_content(model, contents, generation_config=None):
-    request_options = GEMINI_REQUEST_OPTIONS
-    for attempt in range(2):
+    for attempt in range(len(GEMINI_OVERLOAD_RETRY_DELAYS) + 1):
         try:
             if generation_config is None:
-                return model.generate_content(contents, request_options=request_options)
+                return model.generate_content(
+                    contents,
+                    request_options=GEMINI_REQUEST_OPTIONS,
+                )
             return model.generate_content(
                 contents,
                 generation_config=generation_config,
-                request_options=request_options,
+                request_options=GEMINI_REQUEST_OPTIONS,
             )
         except ServiceUnavailable as e:
-            if attempt == 1:
+            if attempt == len(GEMINI_OVERLOAD_RETRY_DELAYS):
                 raise GeminiUnavailableError(
-                    "Gemini is temporarily overloaded. Please wait a minute and try again."
+                    "Gemini is still overloaded after several attempts. Please wait a few minutes and try again."
                 ) from e
-            time.sleep(1)
+            time.sleep(GEMINI_OVERLOAD_RETRY_DELAYS[attempt])
 
 
 def _call_gemini(prompt, generation_config=None):
