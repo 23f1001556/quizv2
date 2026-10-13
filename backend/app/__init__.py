@@ -7,12 +7,48 @@ from app.models import User, Scores, Quiz, Chapter, Subject, Question
 from app.models.Ai.history import AIHistory
 from app.models.study_material import StudyMaterial
 from app.models.mock_quiz import MockQuiz, MockQuestion, MockAttempt
+from werkzeug.security import check_password_hash
 
 from app.auth.routes import auth_bp
 from app.route.users.routes import users_bp
 from app.route.subjects.routes import subjects_bp
 from app.route.chapters.routes import chapters_bp
 from app.route.quiz.routes import quiz_bp
+
+
+def _seed_initial_user(app):
+    email = app.config.get("INITIAL_USER_EMAIL")
+    password = app.config.get("INITIAL_USER_PASSWORD")
+    username = app.config.get("INITIAL_USER_USERNAME")
+
+    if not email and not password:
+        return
+    if not email or not password:
+        raise ValueError("INITIAL_USER_EMAIL and INITIAL_USER_PASSWORD must both be configured")
+
+    email = User.format_email(email)
+    username = User.format_username(username or email.split("@", 1)[0])
+    if not 5 <= len(username) <= 20:
+        raise ValueError("INITIAL_USER_USERNAME must be 5-20 characters")
+
+    user = User.query.filter_by(email=email).first()
+    if user:
+        if user.isadmin:
+            raise ValueError("Configured initial regular user email belongs to an admin account")
+        if not check_password_hash(user._password, password):
+            app.logger.warning("Configured initial user already exists; leaving its password unchanged")
+        return
+
+    username_owner = User.query.filter_by(user_name=username).first()
+    if username_owner:
+        raise ValueError("Configured initial username is already in use")
+
+    user = User(user_name=username, email=email, isadmin=False, role="user")
+    user.password = password
+    user.is_verified = True
+    user.is_blocked = False
+    db.session.add(user)
+    db.session.commit()
 
 
 def create_app(test_config=None):
@@ -61,5 +97,7 @@ def create_app(test_config=None):
 
     with app.app_context():
         db.create_all() 
+        if not test_config:
+            _seed_initial_user(app)
 
     return app

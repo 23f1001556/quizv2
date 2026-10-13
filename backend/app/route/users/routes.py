@@ -21,7 +21,7 @@ def get_users():
                 "fullname": user.fullname,
                 "qualification": user.qualification,
                 "dob": user.dob.strftime('%Y-%m-%d') if user.dob else None,
-                "isadmin": user.isadmin or user.id == 1,
+                "isadmin": user.isadmin,
                 "is_blocked": user.is_blocked if hasattr(user, 'is_blocked') else False
             })
         return jsonify({"users": output}), 200
@@ -44,7 +44,7 @@ def get_user(id):
             "fullname": user.fullname,
             "qualification": user.qualification,
             "dob": user.dob.strftime('%Y-%m-%d') if user.dob else None,
-            "isadmin": user.isadmin or user.id == 1,
+            "isadmin": user.isadmin,
             "is_blocked": user.is_blocked if hasattr(user, 'is_blocked') else False
         }
         return jsonify({"user": user_data}), 200
@@ -290,8 +290,7 @@ def get_profile():
             "fullname": user.fullname,
             "qualification": user.qualification,
             "dob": user.dob.strftime('%Y-%m-%d') if user.dob else "",
-            "isadmin": user.isadmin or user.id == 1,
-            "gemini_api_key": user.gemini_api_key
+            "isadmin": user.isadmin
         }
 
         stats = {
@@ -329,24 +328,6 @@ def update_profile():
             except ValueError:
                 pass # Ignore invalid date format
 
-        if "gemini_api_key" in data:
-            new_key = data["gemini_api_key"]
-            current_masked = user.gemini_api_key
-            
-            should_update = False
-            # If no current key, always update
-            if current_masked is None:
-                should_update = True
-            # If current key exists, only update if new key is different AND not the masked version itself
-            elif new_key != current_masked:
-                # Basic check to ensure we aren't just sending back the masked string
-                # Masked strings usually contain ****
-                if "****" not in new_key:
-                    should_update = True
-            
-            if should_update:
-                user.gemini_api_key = new_key
-        
         db.session.commit()
         return jsonify({"message": "Profile updated successfully"}), 200
 

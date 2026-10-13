@@ -1,12 +1,14 @@
 <template>
-    <div class="auth-container">
-        <!-- Background Decorations -->
-        <div class="glow-blob blob-1"></div>
-        <div class="glow-blob blob-2"></div>
-        <div class="ribbon ribbon-1"></div>
-        <div class="ribbon ribbon-2"></div>
+    <div class="auth-page">
+        <PublicNavbar />
+        <main class="auth-container">
+            <!-- Background Decorations -->
+            <div class="glow-blob blob-1"></div>
+            <div class="glow-blob blob-2"></div>
+            <div class="ribbon ribbon-1"></div>
+            <div class="ribbon ribbon-2"></div>
 
-        <div class="auth-card">
+            <div class="auth-card">
             <div class="auth-header">
                 <h1>Create Account</h1>
                 <p>Join Quizzy and start your journey</p>
@@ -53,13 +55,18 @@
             <div class="auth-footer">
                 <p>Already have an account? <router-link to="/login">Sign in</router-link></p>
             </div>
-        </div>
+            </div>
+
+        </main>
+        <AdminLoginCard mode="register" />
     </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 import api from '@/services/api'
+import AdminLoginCard from '@/components/AdminLoginCard.vue'
+import PublicNavbar from '@/components/PublicNavbar.vue'
 
 const username = ref('')
 const email = ref('')
@@ -104,8 +111,13 @@ const handleRegister = async () => {
 </script>
 
 <style scoped>
-.auth-container {
+.auth-page {
     min-height: 100vh;
+    background: #020617;
+}
+
+.auth-container {
+    min-height: calc(100vh - 72px);
     display: flex;
     align-items: center;
     justify-content: center;

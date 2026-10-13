@@ -100,7 +100,7 @@ def login():
 
         token = jwt.encode({
             "user_id": user.id,
-            "isadmin": user.isadmin or user.id == 1,
+            "isadmin": user.isadmin,
             "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=30)
         }, current_app.config["SECRET_KEY"], algorithm="HS256")
 
@@ -111,7 +111,7 @@ def login():
                 "id": user.id,
                 "username": user.user_name,
                 "email": user.email,
-                "isadmin": user.isadmin or user.id == 1
+                "isadmin": user.isadmin
             }
         }), 200
 
@@ -246,7 +246,7 @@ def current_user():
             "user": {
                 "username": user.user_name,
                 "email": user.email,
-                "isadmin": user.isadmin or user.id == 1
+                "isadmin": user.isadmin
             }
         }), 200
 

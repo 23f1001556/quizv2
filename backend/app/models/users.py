@@ -15,37 +15,12 @@ class User(db.Model):
     qualification = db.Column(db.String(100))
     dob = db.Column(db.Date)
     isadmin = db.Column(db.Boolean, default=False, nullable=False)
+    role = db.Column(db.String(20), default="user", nullable=False)
     is_blocked = db.Column(db.Boolean, default=False, nullable=False)
     is_verified = db.Column(db.Boolean, default=False)
-    _gemini_api_key = db.Column("gemini_api_key", db.String(500))
 
     # Relationships
     scores = db.relationship("Scores", back_populates="user", cascade="all, delete-orphan")
-
-    @property
-    def gemini_api_key(self):
-        # Masking logic
-        if not self._gemini_api_key:
-            return None
-        from app.utils.crypto import decrypt_key
-        raw = decrypt_key(self._gemini_api_key)
-        if not raw:
-            return None
-        if len(raw) <= 8:
-            return "****"
-        return f"{raw[:8]}****{raw[-4:]}"
-
-    @gemini_api_key.setter
-    def gemini_api_key(self, value):
-        from app.utils.crypto import encrypt_key
-        if value:
-            self._gemini_api_key = encrypt_key(value)
-        else:
-            self._gemini_api_key = None
-
-    def get_raw_gemini_key(self):
-        from app.utils.crypto import decrypt_key
-        return decrypt_key(self._gemini_api_key)
 
     @property
     def password(self):

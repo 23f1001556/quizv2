@@ -54,9 +54,11 @@ def admin_required(f):
 def protect_super_admin(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        # Check if the target resource ID is 1 (Super Admin)
         target_id = kwargs.get("id")
-        if target_id == 1:
-            return jsonify({"message": "Action not allowed on Super Admin"}), 403
+        if target_id is not None:
+            from app.models.users import User
+            target_user = User.query.get(target_id)
+            if target_user and target_user.isadmin:
+                return jsonify({"message": "Action not allowed on administrator accounts"}), 403
         return f(*args, **kwargs)
     return decorated

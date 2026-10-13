@@ -1,12 +1,14 @@
 <template>
-    <div class="auth-container">
-        <!-- Background Decorations -->
-        <div class="glow-blob blob-1"></div>
-        <div class="glow-blob blob-2"></div>
-        <div class="ribbon ribbon-1"></div>
-        <div class="ribbon ribbon-2"></div>
+    <div class="auth-page">
+        <PublicNavbar />
+        <main class="auth-container">
+            <!-- Background Decorations -->
+            <div class="glow-blob blob-1"></div>
+            <div class="glow-blob blob-2"></div>
+            <div class="ribbon ribbon-1"></div>
+            <div class="ribbon ribbon-2"></div>
 
-        <div class="auth-card">
+            <div class="auth-card">
             <div class="auth-header">
                 <h1>Welcome Back</h1>
                 <p>Sign in to continue to Quizzy</p>
@@ -40,29 +42,36 @@
             <div class="auth-footer">
                 <p>Don't have an account? <router-link to="/register">Sign up</router-link></p>
             </div>
-        </div>
+            </div>
+
+        </main>
+        <AdminLoginCard @login="handleLogin" />
     </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/api'
+import AdminLoginCard from '@/components/AdminLoginCard.vue'
+import PublicNavbar from '@/components/PublicNavbar.vue'
+import { demoAdminCredentials, regularUserCredentials } from '@/features/auth/demoAdminCredentials'
 
 const router = useRouter()
+const route = useRoute()
 const email = ref('')
 const password = ref('')
 const isLoading = ref(false)
 const error = ref('')
 
-const handleLogin = async () => {
+const handleLogin = async (credentials = null) => {
     isLoading.value = true
     error.value = ''
 
     try {
         const response = await api.post('/auth/login', {
-            email: email.value,
-            password: password.value
+            email: credentials?.email || email.value,
+            password: credentials?.password || password.value
         })
 
         const { token, user } = response.data
@@ -85,11 +94,24 @@ const handleLogin = async () => {
         isLoading.value = false
     }
 }
+
+onMounted(() => {
+    if (route.query.adminLogin === 'true') {
+        handleLogin(demoAdminCredentials)
+    } else if (route.query.userLogin === 'true') {
+        handleLogin(regularUserCredentials)
+    }
+})
 </script>
 
 <style scoped>
-.auth-container {
+.auth-page {
     min-height: 100vh;
+    background: #020617;
+}
+
+.auth-container {
+    min-height: calc(100vh - 72px);
     display: flex;
     align-items: center;
     justify-content: center;

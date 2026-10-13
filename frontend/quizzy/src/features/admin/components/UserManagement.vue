@@ -37,8 +37,8 @@
                         </td>
                         <td>{{ user.email }}</td>
                         <td>
-                            <span class="role-badge" :class="{ admin: user.isadmin || user.id === 1 }">
-                                {{ (user.isadmin || user.id === 1) ? 'Admin' : 'User' }}
+                            <span class="role-badge" :class="{ admin: user.isadmin }">
+                                {{ user.isadmin ? 'Admin' : 'User' }}
                             </span>
                         </td>
                         <td>
@@ -50,13 +50,13 @@
                             <div class="action-buttons">
                                 <button class="btn-icon view-btn" @click="viewScores(user)"
                                     title="View Scores">📊</button>
-                                <button v-if="!user.isadmin && user.id !== 1" class="btn-icon block-btn"
+                                <button v-if="!user.isadmin" class="btn-icon block-btn"
                                     :class="{ active: user.is_blocked }"
                                     @click="confirmAction(user, user.is_blocked ? 'unblock' : 'block')"
                                     :title="user.is_blocked ? 'Unblock User' : 'Block User'">
                                     {{ user.is_blocked ? '🔓' : '🚫' }}
                                 </button>
-                                <button v-if="!user.isadmin && user.id !== 1" class="btn-icon delete-btn"
+                                <button v-if="!user.isadmin" class="btn-icon delete-btn"
                                     @click="confirmAction(user, 'delete')" title="Delete User">🗑️</button>
                             </div>
                         </td>

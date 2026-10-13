@@ -65,20 +65,6 @@
                         <input type="date" v-model="form.dob" />
                     </div>
 
-                    <div class="divider"></div>
-                    <div class="ai-config-section">
-                        <h3>AI Configuration</h3>
-                        <p class="section-desc">Provide your own Gemini API key for AI features, or leave blank to use
-                            system default.</p>
-                        <div class="form-group">
-                            <label>Gemini API Key</label>
-                            <input type="password" v-model="form.gemini_api_key"
-                                placeholder="enter your gemini api key here " class="api-key-input" />
-                            <small class="help-text">Your key is stored securely using industry-standard
-                                encryption.</small>
-                        </div>
-                    </div>
-
                     <div class="form-actions">
                         <button type="submit" class="btn-save" :disabled="saving">
                             <span v-if="saving">Saving...</span>
@@ -135,8 +121,7 @@ const stats = ref({
 const form = ref({
     fullname: '',
     qualification: '',
-    dob: '',
-    gemini_api_key: ''
+    dob: ''
 })
 const saving = ref(false)
 
@@ -155,7 +140,6 @@ const fetchProfile = async () => {
         form.value.fullname = user.value.fullname || ''
         form.value.qualification = user.value.qualification || ''
         form.value.dob = user.value.dob || ''
-        form.value.gemini_api_key = user.value.gemini_api_key || ''
     } catch (error) {
         console.error("Failed to load profile", error)
     }
@@ -469,38 +453,6 @@ onMounted(() => {
 .btn-save:disabled {
     opacity: 0.7;
     cursor: default;
-}
-
-.divider {
-    height: 1px;
-    background: var(--border-color);
-    margin: 2rem 0;
-}
-
-.ai-config-section h3 {
-    font-size: 1.25rem;
-    margin-bottom: 0.5rem;
-    color: var(--text-primary);
-    border: none;
-    padding: 0;
-}
-
-.section-desc {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    margin-bottom: 1.5rem;
-}
-
-.help-text {
-    display: block;
-    margin-top: 0.5rem;
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-}
-
-.api-key-input {
-    letter-spacing: 0.1rem;
-    font-family: monospace;
 }
 
 /* Activity List */

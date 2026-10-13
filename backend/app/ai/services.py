@@ -5,33 +5,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Configure Gemini fallback
+# Configure Gemini using the server-side key.
 DEFAULT_API_KEY = os.getenv("GEMINI_API_KEY")
 genai.configure(api_key=DEFAULT_API_KEY)
 
-def get_user_model():
-    """
-    Returns a GenerativeModel instance using the current user's API key if available,
-    otherwise falls back to the system default.
-    """
-    from flask import request
-    from app.models.users import User
-    
-    user_id = getattr(request, 'user_id', None)
-    if user_id:
-        user = User.query.get(user_id)
-        if user:
-            user_key = user.get_raw_gemini_key()
-            if user_key:
-                # Create a local configuration for this request
-                # Legacy library approach: configure global state
-                genai.configure(api_key=user_key)
-                return genai.GenerativeModel("gemini-flash-latest")
-    
+def get_model():
     if not DEFAULT_API_KEY:
-         raise ValueError("Gemini API Key not found. Please set it in Settings/Profile or ask Admin to configure the server key.")
+        raise ValueError("Gemini API key is not configured on the server.")
 
-    # Revert to default key if needed (though global state is sticky, so good to be explicit)
     genai.configure(api_key=DEFAULT_API_KEY)
     return genai.GenerativeModel("gemini-flash-latest")
 
@@ -45,7 +26,7 @@ Do not generate any harmful, inappropriate, or non-educational content.
 def _call_gemini(prompt):
     full_prompt = f"{GUARDRAIL_PROMPT}\n\n{prompt}"
     try:
-        model = get_user_model()
+        model = get_model()
         response = model.generate_content(full_prompt)
         return response.text
     except ValueError as ve:
@@ -180,7 +161,7 @@ def process_media(file_path, action, query=None, difficulty="Medium", count=5):
             return "Invalid action."
 
         # Multimodal generation
-        model = get_user_model()
+        model = get_model()
         response = model.generate_content([GUARDRAIL_PROMPT, prompt, content_part] if not is_pdf else [GUARDRAIL_PROMPT, prompt + "\n" + content_part])
         return response.text
 

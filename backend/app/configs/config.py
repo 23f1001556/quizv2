@@ -7,6 +7,9 @@ class BaseConfig:
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "sqlite:///site.db")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECRET_KEY = os.getenv("SECRET_KEY")
+    INITIAL_USER_EMAIL = os.getenv("INITIAL_USER_EMAIL")
+    INITIAL_USER_PASSWORD = os.getenv("INITIAL_USER_PASSWORD")
+    INITIAL_USER_USERNAME = os.getenv("INITIAL_USER_USERNAME")
     MAIL_SERVER = 'smtp.gmail.com'
     MAIL_PORT = 587
     MAIL_USE_TLS = True
